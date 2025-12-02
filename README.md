@@ -1,11 +1,11 @@
-## @azbox/node
+## azbox-node
 
 Very small Node.js / TypeScript client to fetch **keywords** for an **Azbox** project.
 
 ### Installation
 
 ```bash
-npm install @azbox/node
+npm install azbox-node
 ```
 
 > Use Node 18 or newer (relies on native `fetch`).
@@ -13,7 +13,7 @@ npm install @azbox/node
 ### Basic usage
 
 ```ts
-import { AzboxClient } from "@azbox/node";
+import { AzboxClient } from "azbox-node";
 
 const client = new AzboxClient({
   apiKey: process.env.AZBOX_API_KEY!, // Azbox API key
@@ -40,7 +40,7 @@ The Azbox backend exposes on `/v1/projects/:pid/keywords` the parameter
 a specific date.
 
 ```ts
-import { AzboxClient } from "@azbox/node";
+import { AzboxClient } from "azbox-node";
 
 const client = new AzboxClient({
   apiKey: process.env.AZBOX_API_KEY!,

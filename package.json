@@ -1,7 +1,7 @@
 {
-  "name": "@azbox/node",
+  "name": "azbox-node",
   "version": "0.1.0",
-  "description": "Cliente sencillo para obtener keywords de proyectos Azbox desde Node.js",
+  "description": "Simple client to fetch Azbox project keywords from Node.js",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
