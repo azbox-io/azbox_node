@@ -1,6 +1,6 @@
 {
   "name": "azbox-node",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Simple client to fetch Azbox project keywords from Node.js",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
