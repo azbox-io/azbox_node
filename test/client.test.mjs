@@ -67,6 +67,31 @@ test("language is sent in upper case", async () => {
   assert.equal(calls[0].url.searchParams.get("language"), "PT-BR");
 });
 
+test("works where URL and URLSearchParams are incomplete (React Native)", async () => {
+  const { URL: RealURL, URLSearchParams: RealParams } = globalThis;
+  class Broken {
+    constructor() {
+      throw new Error("not implemented");
+    }
+  }
+  let requested;
+  try {
+    globalThis.URL = Broken;
+    globalThis.URLSearchParams = Broken;
+    await client(async (url) => {
+      requested = String(url);
+      return new Response("[]", { status: 200 });
+    }).getKeywords({ afterUpdatedAt: new Date("2026-09-01T00:00:00.000Z") });
+  } finally {
+    globalThis.URL = RealURL;
+    globalThis.URLSearchParams = RealParams;
+  }
+  assert.equal(
+    requested,
+    "https://api.azbox.io/v1/projects/p1/keywords?language=ES&afterUpdatedAtStr=2026-09-01T00%3A00%3A00.000Z"
+  );
+});
+
 test("afterUpdatedAt is sent as afterUpdatedAtStr in ISO", async () => {
   const { impl, calls } = fakeFetch(() => ({ body: [] }));
   await client(impl).getKeywords({ afterUpdatedAt: new Date("2026-09-01T00:00:00.000Z") });

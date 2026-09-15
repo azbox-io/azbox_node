@@ -72,9 +72,8 @@ Failures throw `AzboxError` with `status` and the API's `detail` when there is o
 
 - **401**: the API key is wrong or revoked.
 - **403**: the key has no access to that project, or is bound to another one.
-- **404** with `status` set: the language does not exist in the project.
 
-A language code the project does not have, but which the API accepts, returns every keyword with no translation. If `getTranslations()` comes back empty, check the code.
+A language code the project does not use is not an error: the API returns every keyword with no translation. If `getTranslations()` comes back empty, check the code.
 
 ## Tests
 

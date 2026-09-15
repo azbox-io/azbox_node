@@ -126,21 +126,23 @@ export class AzboxClient {
    * throw.
    */
   async getKeywords(options: GetKeywordsOptions = {}): Promise<AzboxKeyword[]> {
-    // Built as one string, not new URL("/projects/…", base): a leading slash
-    // drops the path of the base URL, and that is what broke 0.1.x.
-    const url = new URL(
-      `${this.baseUrl}/v1/projects/${encodeURIComponent(this.projectId)}/keywords`
-    );
+    // Built by hand instead of with URL: new URL("/projects/…", base) drops the
+    // path of the base URL, which is what broke 0.1.x, and React Native's
+    // URLSearchParams does not implement set().
+    const query: Array<[string, string]> = [];
     const headers: Record<string, string> = { accept: "application/json" };
     if (isApiKey(this.apiKey)) {
       headers["x-api-key"] = this.apiKey;
     } else {
-      url.searchParams.set("api_key", this.apiKey);
+      query.push(["api_key", this.apiKey]);
     }
-    url.searchParams.set("language", this.language);
+    query.push(["language", this.language]);
     if (options.afterUpdatedAt) {
-      url.searchParams.set("afterUpdatedAtStr", options.afterUpdatedAt.toISOString());
+      query.push(["afterUpdatedAtStr", options.afterUpdatedAt.toISOString()]);
     }
+    const url =
+      `${this.baseUrl}/v1/projects/${encodeURIComponent(this.projectId)}/keywords?` +
+      query.map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&");
 
     let response: Response;
     try {
