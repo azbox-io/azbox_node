@@ -1,83 +1,87 @@
-## azbox-node
+# azbox-node
 
-Very small Node.js / TypeScript client to fetch **keywords** for an **Azbox** project.
+Small Node.js / TypeScript client to fetch the translations of an [AZbox](https://azbox.io) project.
 
-### Installation
+> **Upgrade from 0.1.x.** Versions 0.1.0 and 0.1.1 never worked: they called a URL without `/v1`, sent a parameter the API rejects, and `require("azbox-node")` pointed to a file that was not in the package. 0.2.0 fixes all three and keeps the same class and method, so existing code only needs the upgrade.
+
+## Install
 
 ```bash
 npm install azbox-node
 ```
 
-> Use Node 18 or newer (relies on native `fetch`).
+Node 18 or newer (it uses the global `fetch`). Works with `import` and `require`.
 
-### Basic usage
-
-```ts
-import { AzboxClient } from "azbox-node";
-
-const client = new AzboxClient({
-  apiKey: process.env.AZBOX_API_KEY!, // Azbox API key
-  projectId: "my-project-id",         // Azbox project ID
-  language: "EN"                      // e.g. EN, ES, PT
-});
-
-async function main() {
-  const keywords = await client.getKeywords();
-
-  // keywords is an array of { id, data }
-  for (const kw of keywords) {
-    console.log(kw.id, kw.data.translation);
-  }
-}
-
-main().catch(console.error);
-```
-
-### Sync only recent changes
-
-The Azbox backend exposes on `/v1/projects/:pid/keywords` the parameter
-`afterUpdatedAtStr`, which lets you fetch only the keywords updated after
-a specific date.
+## Usage
 
 ```ts
 import { AzboxClient } from "azbox-node";
 
 const client = new AzboxClient({
-  apiKey: process.env.AZBOX_API_KEY!,
-  projectId: "my-project-id",
-  language: "ES"
+  apiKey: process.env.AZBOX_API_KEY!, // dashboard → Settings → API keys (azb_live_…)
+  projectId: process.env.AZBOX_PROJECT_ID!,
+  language: "ES", // as configured in the project
 });
 
-// Example: only fetch changes since the last sync
-const lastSync = new Date("2025-01-01T00:00:00.000Z");
-
-const updatedKeywords = await client.getKeywords({
-  afterUpdatedAt: lastSync
-});
+const t = await client.getTranslations();
+// { "home.title": "Bienvenido", … }
 ```
 
-### Client API
+`getTranslations()` gives you a `{ keyword: translation }` object and leaves out keywords that have no text yet in that language. If you need the raw data, `getKeywords()` returns what the API sends:
 
-- **`new AzboxClient(options)`**
-  - **`apiKey`**: `string` (required) – sent as `?token=...` on the query string.
-  - **`projectId`**: `string` (required) – Azbox project ID.
-  - **`language`**: `string` (required) – language code (for example `EN`, `ES`).
-  - **`baseUrl`**: `string` (optional) – defaults to `https://api.azbox.io/v1`.
+```ts
+const keywords = await client.getKeywords();
+// [{ id: "8Kd0pQ2m…", data: { keyword: "home.title", translation: "Bienvenido", … } }]
+```
 
-- **`client.getKeywords(options?)`** → `Promise<AzboxKeyword[]>`
-  - **`afterUpdatedAt`**: `Date` (optional) – if provided, sent as `afterUpdatedAtStr` in ISO format.
-  - Returns the array coming from the backend API:
-    - `{ id: string, data: { translation?: string, context?: string, ... } }`
+The key is `data.keyword`. `id` is an internal document identifier.
 
-This library does not implement any cache or persistence; it only wraps the HTTP call in a small, typed client.
+## Sync only what changed
 
-### Caching recommendation
+```ts
+const changed = await client.getTranslations({ afterUpdatedAt: lastSync });
+```
 
-Azbox has a **monthly request limit**, so it is strongly recommended that you:
+Store the time of the response you last applied, not the current clock, or you will miss anything written while your request was in flight.
 
-- Cache the keywords in memory in your app, **or**
-- Persist them in your own database and periodically sync using `afterUpdatedAt`
+Fetch once and keep the result in memory or on disk: calling the API on every request of your app adds a network round trip to each one.
 
-This way you avoid hitting the Azbox API on every request of your application and you stay within your quota. 
+## API
 
+### `new AzboxClient(options)`
 
+| Option | Required | |
+|---|---|---|
+| `apiKey` | yes | API key. `azb_live_…` keys go in the `x-api-key` header; older credentials as `?api_key=`. `token` is accepted as an alias. |
+| `projectId` | yes | Project ID from the dashboard. |
+| `language` | yes | Language code of the project (`EN`, `ES`, `PT-BR`…). Sent in upper case. |
+| `baseUrl` | no | Default `https://api.azbox.io`. |
+| `fetch` | no | Custom `fetch` implementation. |
+
+One client reads one language. For several, create one per language.
+
+### `client.getKeywords({ afterUpdatedAt? })` → `Promise<AzboxKeyword[]>`
+
+Returns `[]` when the project has no keywords (the API answers 404 for that).
+
+### `client.getTranslations({ afterUpdatedAt? })` → `Promise<Record<string, string>>`
+
+### Errors
+
+Failures throw `AzboxError` with `status` and the API's `detail` when there is one:
+
+- **401**: the API key is wrong or revoked.
+- **403**: the key has no access to that project, or is bound to another one.
+- **404** with `status` set: the language does not exist in the project.
+
+A language code the project does not have, but which the API accepts, returns every keyword with no translation. If `getTranslations()` comes back empty, check the code.
+
+## Tests
+
+```bash
+npm test
+```
+
+## License
+
+MIT
